@@ -1,7 +1,7 @@
 const puppeteer = require('puppeteer');
 
 (async () => {
-    console.log('[+] Starting auto-reset process using Session Cookie...');
+    console.log('[+] Starting auto-reset process...');
     
     const browser = await puppeteer.launch({ 
         headless: "new",
@@ -12,10 +12,8 @@ const puppeteer = require('puppeteer');
     await page.setViewport({ width: 1280, height: 800 });
 
     try {
-        // 1. الانتقال إلى الدومين أولاً لضبط الـ Cookie
         await page.goto('https://justrunmy.app', { waitUntil: 'domcontentloaded' });
 
-        // 2. تفكيك وإضافة الـ Cookie
         const rawCookie = process.env.MY_COOKIE || '';
         if (rawCookie) {
             const cookiePairs = rawCookie.split(';');
@@ -30,16 +28,16 @@ const puppeteer = require('puppeteer');
                     });
                 }
             }
-            console.log('[+] Session cookies applied successfully.');
         }
 
-        // 3. الدخول مباشرة لصفحة تطبيقك (تجاوز صفحة الدخول)
-        console.log('[+] Navigating directly to application page...');
+        console.log('[+] Navigating to application page...');
         await page.goto('https://justrunmy.app/panel/application/63274/', { waitUntil: 'networkidle2', timeout: 60000 });
 
-        // 4. الانتظار حتى ظهور زر Reset timer
-        console.log('[+] Waiting for page buttons to load...');
-        await page.waitForSelector('button', { timeout: 30000 });
+        // التوقف لمدة 3 ثوانٍ لضمان التحميل الكامل
+        await new Promise(r => setTimeout(r, 3000));
+
+        // حفظ صورة للشاشة لمعاينة ما يراه السكريبت
+        await page.screenshot({ path: 'page_preview.png', fullPage: true });
 
         const buttons = await page.$$('button');
         let clicked = false;
