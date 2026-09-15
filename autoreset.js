@@ -26,7 +26,7 @@ puppeteer.use(StealthPlugin());
         // 1. الانتقال للموقع الأساسي
         await page.goto('https://justrunmy.app', { waitUntil: 'domcontentloaded' });
 
-        // 2. تفكيك الـ Cookie وتطبيق كافة قيم الـ Session
+        // 2. تطبيق الـ Cookies
         const rawCookie = process.env.MY_COOKIE || '';
         if (rawCookie) {
             const cookiePairs = rawCookie.split(';');
@@ -49,18 +49,34 @@ puppeteer.use(StealthPlugin());
             console.log('[+] Authenticated Session Cookies applied successfully.');
         }
 
-        // 3. التوجه المباشر للوحة التحكم بالتطبيق
+        // 3. التوجه المباشر لصفحة التطبيق
         console.log('[+] Navigating to application control panel...');
         await page.goto('https://justrunmy.app/panel/application/63274/', { waitUntil: 'networkidle2', timeout: 60000 });
 
-        // انتظار تحميل واجهة React / Vue
-        await new Promise(r => setTimeout(r, 5000));
+        // انتظار تحمّل العناصر
+        await new Promise(r => setTimeout(r, 4000));
 
-        // 4. التقاط صورة للشاشة لمعاينة النتيجة في GitHub Artifacts
+        // 4. التعامل مع أي نافذة منبثقة (Modal/Popup) وإغلاقها
+        try {
+            const modalButtons = await page.$$('button');
+            for (const btn of modalButtons) {
+                const txt = await page.evaluate(el => el.innerText || el.textContent, btn);
+                if (txt && (txt.trim().toLowerCase() === 'confirm' || txt.trim().toLowerCase() === 'close')) {
+                    await btn.click();
+                    console.log(`[+] Closed popup modal by clicking "${txt.trim()}"`);
+                    await new Promise(r => setTimeout(r, 2000));
+                    break;
+                }
+            }
+        } catch (e) {
+            console.log('[!] No modal encountered or failed to close modal.');
+        }
+
+        // 5. التقاط صورة للشاشة للتأكد والمعاينة
         await page.screenshot({ path: 'page_preview.png', fullPage: true });
         console.log('[+] Page screenshot saved.');
 
-        // 5. البحث عن زر Reset timer بأشكال مختلفة والضغط عليه
+        // 6. البحث عن زر Reset timer والضغط عليه
         const buttons = await page.$$('button, a, div[role="button"]');
         let clicked = false;
         
