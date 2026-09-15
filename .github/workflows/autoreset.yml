@@ -1,36 +1,36 @@
-name: Auto Reset JustRunMyApp Timer
+name: Auto Reset Timer
 
 on:
   schedule:
-    - cron: '0 */12 * * *'
+    # يعمل تلقائياً كل 24 ساعة في الساعة 12:00 ظهراً بتوقيت UTC
+    - cron: '0 12 * * *'
+  
   workflow_dispatch:
 
 jobs:
-  reset-timer:
+  reset-job:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository code
-      uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-    - name: Install dependencies
-      run: npm install
+      - name: Install Dependencies
+        run: npm install puppeteer puppeteer-extra puppeteer-extra-plugin-stealth
 
-    - name: Run Auto Reset Script
-      env:
-        MY_EMAIL: ${{ secrets.MY_EMAIL }}
-        MY_PASSWORD: ${{ secrets.MY_PASSWORD }}
-        MY_COOKIE: ${{ secrets.MY_COOKIE }}
-      run: node autoreset.js
+      - name: Run Auto Reset Script
+        env:
+          MY_COOKIE: ${{ secrets.MY_COOKIE }}
+        run: node autoreset.js
 
-    - name: Upload Screenshot Artifact
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: page-screenshot
-        path: page_preview.png
+      - name: Upload Screenshot Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: page-screenshot
+          path: page_preview.png
