@@ -1,7 +1,6 @@
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 
-// استخدام وضع Stealth لتجاوز حماية Bot Detection
 puppeteer.use(StealthPlugin());
 
 (async () => {
@@ -12,47 +11,56 @@ puppeteer.use(StealthPlugin());
         args: [
             '--no-sandbox', 
             '--disable-setuid-sandbox',
+            '--disable-blink-features=AutomationControlled',
             '--window-size=1280,800'
         ]
     });
     
     const page = await browser.newPage();
     
-    // محاكاة متصفح حقيقي
+    // ضبط الهوية كمتصفح طبيعي
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
     await page.setViewport({ width: 1280, height: 800 });
 
     try {
+        // 1. الانتقال للموقع الأساسي
         await page.goto('https://justrunmy.app', { waitUntil: 'domcontentloaded' });
 
-        // 1. إضافة الـ Cookies
+        // 2. تفكيك الـ Cookie وتطبيق كافة قيم الـ Session
         const rawCookie = process.env.MY_COOKIE || '';
         if (rawCookie) {
             const cookiePairs = rawCookie.split(';');
             for (const pair of cookiePairs) {
-                const [name, ...val] = pair.trim().split('=');
-                if (name && val.length > 0) {
+                const parts = pair.trim().split('=');
+                const name = parts[0];
+                const value = parts.slice(1).join('=');
+                
+                if (name && value) {
                     await page.setCookie({
                         name: name.trim(),
-                        value: val.join('=').trim(),
-                        domain: 'justrunmy.app',
-                        path: '/'
+                        value: value.trim(),
+                        domain: '.justrunmy.app',
+                        path: '/',
+                        httpOnly: true,
+                        secure: true
                     });
                 }
             }
-            console.log('[+] Session Cookies applied.');
+            console.log('[+] Authenticated Session Cookies applied successfully.');
         }
 
-        // 2. التوجه لصفحة التطبيق
-        console.log('[+] Navigating to application page...');
+        // 3. التوجه المباشر للوحة التحكم بالتطبيق
+        console.log('[+] Navigating to application control panel...');
         await page.goto('https://justrunmy.app/panel/application/63274/', { waitUntil: 'networkidle2', timeout: 60000 });
 
-        await new Promise(r => setTimeout(r, 4000));
+        // انتظار تحميل واجهة React / Vue
+        await new Promise(r => setTimeout(r, 5000));
 
-        // 3. التقاط صورة للشاشة للتأكد
+        // 4. التقاط صورة للشاشة لمعاينة النتيجة في GitHub Artifacts
         await page.screenshot({ path: 'page_preview.png', fullPage: true });
+        console.log('[+] Page screenshot saved.');
 
-        // 4. الضغط على زر Reset Timer
+        // 5. البحث عن زر Reset timer بأشكال مختلفة والضغط عليه
         const buttons = await page.$$('button, a, div[role="button"]');
         let clicked = false;
         
@@ -61,19 +69,19 @@ puppeteer.use(StealthPlugin());
             if (text && text.toLowerCase().includes('reset timer')) {
                 await button.click();
                 clicked = true;
-                console.log('[✔] Reset timer clicked successfully!');
+                console.log('[✔] Reset timer button clicked successfully!');
                 break;
             }
         }
 
         if (!clicked) {
-            console.log('[!] Reset timer button not found. (Check page_preview.png)');
+            console.log('[!] Reset timer button not found. Check page_preview.png artifact.');
         }
 
-        await new Promise(r => setTimeout(r, 2000));
+        await new Promise(r => setTimeout(r, 3000));
 
     } catch (error) {
-        console.error('[X] Error during auto-reset:', error.message);
+        console.error('[X] Error during execution:', error.message);
         process.exit(1);
     } finally {
         await browser.close();
