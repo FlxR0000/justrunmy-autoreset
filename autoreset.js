@@ -18,15 +18,12 @@ puppeteer.use(StealthPlugin());
     
     const page = await browser.newPage();
     
-    // ضبط الهوية كمتصفح طبيعي
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
     await page.setViewport({ width: 1280, height: 800 });
 
     try {
-        // 1. الانتقال للموقع الأساسي
         await page.goto('https://justrunmy.app', { waitUntil: 'domcontentloaded' });
 
-        // 2. تطبيق الـ Cookies
         const rawCookie = process.env.MY_COOKIE || '';
         if (rawCookie) {
             const cookiePairs = rawCookie.split(';');
@@ -49,14 +46,11 @@ puppeteer.use(StealthPlugin());
             console.log('[+] Authenticated Session Cookies applied successfully.');
         }
 
-        // 3. التوجه المباشر لصفحة التطبيق
         console.log('[+] Navigating to application control panel...');
         await page.goto('https://justrunmy.app/panel/application/63274/', { waitUntil: 'networkidle2', timeout: 60000 });
-
-        // انتظار تحمّل العناصر
         await new Promise(r => setTimeout(r, 4000));
 
-        // 4. التعامل مع أي نافذة منبثقة (Modal/Popup) وإغلاقها
+        // 1. إغلاق أي نافذة منبثقة سابقة
         try {
             const modalButtons = await page.$$('button');
             for (const btn of modalButtons) {
@@ -69,14 +63,10 @@ puppeteer.use(StealthPlugin());
                 }
             }
         } catch (e) {
-            console.log('[!] No modal encountered or failed to close modal.');
+            console.log('[!] No initial modal encountered.');
         }
 
-        // 5. التقاط صورة للشاشة للتأكد والمعاينة
-        await page.screenshot({ path: 'page_preview.png', fullPage: true });
-        console.log('[+] Page screenshot saved.');
-
-        // 6. البحث عن زر Reset timer والضغط عليه
+        // 2. الضغط على زر Reset timer
         const buttons = await page.$$('button, a, div[role="button"]');
         let clicked = false;
         
@@ -85,16 +75,19 @@ puppeteer.use(StealthPlugin());
             if (text && text.toLowerCase().includes('reset timer')) {
                 await button.click();
                 clicked = true;
-                console.log('[✔] Reset timer button clicked successfully!');
+                console.log('[✔] Reset timer button clicked!');
+                await new Promise(r => setTimeout(r, 3000)); // انتظار لتنفيذ الطلب
                 break;
             }
         }
 
         if (!clicked) {
-            console.log('[!] Reset timer button not found. Check page_preview.png artifact.');
+            console.log('[!] Reset timer button not found.');
         }
 
-        await new Promise(r => setTimeout(r, 3000));
+        // 3. التقاط الصورة بعد إعادة الضغط والتأكد
+        await page.screenshot({ path: 'page_preview.png', fullPage: true });
+        console.log('[+] Final page screenshot saved.');
 
     } catch (error) {
         console.error('[X] Error during execution:', error.message);
