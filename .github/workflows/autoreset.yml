@@ -25,4 +25,5 @@ jobs:
       env:
         MY_EMAIL: ${{ secrets.MY_EMAIL }}
         MY_PASSWORD: ${{ secrets.MY_PASSWORD }}
+        MY_COOKIE: ${{ secrets.MY_COOKIE }}
       run: node autoreset.js
