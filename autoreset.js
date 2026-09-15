@@ -12,6 +12,7 @@ const puppeteer = require('puppeteer');
     await page.setViewport({ width: 1280, height: 800 });
 
     try {
+        // 1. إدخال الـ Cookie إن وجد
         await page.goto('https://justrunmy.app', { waitUntil: 'domcontentloaded' });
 
         const rawCookie = process.env.MY_COOKIE || '';
@@ -28,23 +29,27 @@ const puppeteer = require('puppeteer');
                     });
                 }
             }
+            console.log('[+] Applied Session Cookies.');
         }
 
+        // 2. الذهاب لصفحة التطبيق مباشرة
         console.log('[+] Navigating to application page...');
         await page.goto('https://justrunmy.app/panel/application/63274/', { waitUntil: 'networkidle2', timeout: 60000 });
 
-        // التوقف لمدة 3 ثوانٍ لضمان التحميل الكامل
-        await new Promise(r => setTimeout(r, 3000));
+        // الانتظار لمدة 5 ثوانٍ لضمان تحميل واجهة React/Vue
+        await new Promise(r => setTimeout(r, 5000));
 
-        // حفظ صورة للشاشة لمعاينة ما يراه السكريبت
+        // 3. التقاط صورة للشاشة لمعاينتها لاحقاً في GitHub Actions
         await page.screenshot({ path: 'page_preview.png', fullPage: true });
+        console.log('[+] Saved page screenshot.');
 
-        const buttons = await page.$$('button');
+        // 4. البحث عن زر Reset timer بأي شكل من أشكاله
+        const buttons = await page.$$('button, a, div[role="button"]');
         let clicked = false;
         
         for (const button of buttons) {
-            const text = await page.evaluate(el => el.textContent, button);
-            if (text && text.includes('Reset timer')) {
+            const text = await page.evaluate(el => el.innerText || el.textContent, button);
+            if (text && text.toLowerCase().includes('reset timer')) {
                 await button.click();
                 clicked = true;
                 console.log('[✔] Reset timer clicked successfully!');
@@ -55,6 +60,9 @@ const puppeteer = require('puppeteer');
         if (!clicked) {
             console.log('[!] Reset timer button not found or already pressed.');
         }
+
+        // انتظار ثانيتين بعد الضغط
+        await new Promise(r => setTimeout(r, 2000));
 
     } catch (error) {
         console.error('[X] Error during auto-reset:', error.message);
