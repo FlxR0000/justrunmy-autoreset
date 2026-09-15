@@ -1,7 +1,7 @@
 const puppeteer = require('puppeteer');
 
 (async () => {
-    console.log('[+] Starting auto-reset process...');
+    console.log('[+] Starting auto-reset process using Session Cookie...');
     
     const browser = await puppeteer.launch({ 
         headless: "new",
@@ -9,35 +9,36 @@ const puppeteer = require('puppeteer');
     });
     
     const page = await browser.newPage();
-    // ضبط حجم الشاشة لضمان ظهور كل العناصر
     await page.setViewport({ width: 1280, height: 800 });
 
     try {
-        console.log('[+] Navigating to login page...');
-        await page.goto('https://justrunmy.app/login', { waitUntil: 'networkidle2', timeout: 60000 });
+        // 1. الانتقال إلى الدومين أولاً لضبط الـ Cookie
+        await page.goto('https://justrunmy.app', { waitUntil: 'domcontentloaded' });
 
-        // الانتظار حتى تظهر خانة الإيميل بوضوح
-        console.log('[+] Waiting for email input...');
-        await page.waitForSelector('input[name="email"], input[type="email"]', { visible: true, timeout: 30000 });
+        // 2. تفكيك وإضافة الـ Cookie
+        const rawCookie = process.env.MY_COOKIE || '';
+        if (rawCookie) {
+            const cookiePairs = rawCookie.split(';');
+            for (const pair of cookiePairs) {
+                const [name, ...val] = pair.trim().split('=');
+                if (name && val.length > 0) {
+                    await page.setCookie({
+                        name: name.trim(),
+                        value: val.join('=').trim(),
+                        domain: 'justrunmy.app',
+                        path: '/'
+                    });
+                }
+            }
+            console.log('[+] Session cookies applied successfully.');
+        }
 
-        const emailInput = await page.$('input[name="email"], input[type="email"]');
-        const passwordInput = await page.$('input[name="password"], input[type="password"]');
-
-        await emailInput.type(process.env.MY_EMAIL);
-        await passwordInput.type(process.env.MY_PASSWORD);
-        
-        console.log('[+] Submitting login form...');
-        const submitButton = await page.$('button[type="submit"]');
-        
-        await Promise.all([
-            submitButton.click(),
-            page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 60000 }).catch(() => {})
-        ]);
-
-        console.log('[+] Navigating to application panel...');
+        // 3. الدخول مباشرة لصفحة تطبيقك (تجاوز صفحة الدخول)
+        console.log('[+] Navigating directly to application page...');
         await page.goto('https://justrunmy.app/panel/application/63274/', { waitUntil: 'networkidle2', timeout: 60000 });
 
-        // الانتظار حتى تحميل أزرار الصفحة
+        // 4. الانتظار حتى ظهور زر Reset timer
+        console.log('[+] Waiting for page buttons to load...');
         await page.waitForSelector('button', { timeout: 30000 });
 
         const buttons = await page.$$('button');
