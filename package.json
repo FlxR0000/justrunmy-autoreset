@@ -1,0 +1,8 @@
+{
+  "name": "autoreset",
+  "version": "1.0.0",
+  "main": "autoreset.js",
+  "dependencies": {
+    "puppeteer": "^22.0.0"
+  }
+}
