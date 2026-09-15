@@ -27,3 +27,10 @@ jobs:
         MY_PASSWORD: ${{ secrets.MY_PASSWORD }}
         MY_COOKIE: ${{ secrets.MY_COOKIE }}
       run: node autoreset.js
+
+    - name: Upload Screenshot Artifact
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: page-screenshot
+        path: page_preview.png
