@@ -1,20 +1,31 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+
+// استخدام وضع Stealth لتجاوز حماية Bot Detection
+puppeteer.use(StealthPlugin());
 
 (async () => {
     console.log('[+] Starting auto-reset process...');
     
     const browser = await puppeteer.launch({ 
         headless: "new",
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: [
+            '--no-sandbox', 
+            '--disable-setuid-sandbox',
+            '--window-size=1280,800'
+        ]
     });
     
     const page = await browser.newPage();
+    
+    // محاكاة متصفح حقيقي
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
     await page.setViewport({ width: 1280, height: 800 });
 
     try {
-        // 1. إدخال الـ Cookie إن وجد
         await page.goto('https://justrunmy.app', { waitUntil: 'domcontentloaded' });
 
+        // 1. إضافة الـ Cookies
         const rawCookie = process.env.MY_COOKIE || '';
         if (rawCookie) {
             const cookiePairs = rawCookie.split(';');
@@ -29,21 +40,19 @@ const puppeteer = require('puppeteer');
                     });
                 }
             }
-            console.log('[+] Applied Session Cookies.');
+            console.log('[+] Session Cookies applied.');
         }
 
-        // 2. الذهاب لصفحة التطبيق مباشرة
+        // 2. التوجه لصفحة التطبيق
         console.log('[+] Navigating to application page...');
         await page.goto('https://justrunmy.app/panel/application/63274/', { waitUntil: 'networkidle2', timeout: 60000 });
 
-        // الانتظار لمدة 5 ثوانٍ لضمان تحميل واجهة React/Vue
-        await new Promise(r => setTimeout(r, 5000));
+        await new Promise(r => setTimeout(r, 4000));
 
-        // 3. التقاط صورة للشاشة لمعاينتها لاحقاً في GitHub Actions
+        // 3. التقاط صورة للشاشة للتأكد
         await page.screenshot({ path: 'page_preview.png', fullPage: true });
-        console.log('[+] Saved page screenshot.');
 
-        // 4. البحث عن زر Reset timer بأي شكل من أشكاله
+        // 4. الضغط على زر Reset Timer
         const buttons = await page.$$('button, a, div[role="button"]');
         let clicked = false;
         
@@ -58,10 +67,9 @@ const puppeteer = require('puppeteer');
         }
 
         if (!clicked) {
-            console.log('[!] Reset timer button not found or already pressed.');
+            console.log('[!] Reset timer button not found. (Check page_preview.png)');
         }
 
-        // انتظار ثانيتين بعد الضغط
         await new Promise(r => setTimeout(r, 2000));
 
     } catch (error) {
