@@ -2,7 +2,7 @@ name: Auto Reset Timer
 
 on:
   schedule:
-    # يعمل تلقائياً كل 24 ساعة في الساعة 12:00 ظهراً بتوقيت UTC
+    # يعمل كل 24 ساعة تلقائياً في الساعة 12:00 ظهراً بتوقيت UTC
     - cron: '0 12 * * *'
   
   workflow_dispatch:
@@ -20,8 +20,11 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Dependencies
-        run: npm install puppeteer puppeteer-extra puppeteer-extra-plugin-stealth
+      - name: Fast Install Dependencies
+        env:
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'true'
+        run: |
+          npm install puppeteer puppeteer-extra puppeteer-extra-plugin-stealth
 
       - name: Run Auto Reset Script
         env:
