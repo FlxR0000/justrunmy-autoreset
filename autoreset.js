@@ -9,19 +9,36 @@ const puppeteer = require('puppeteer');
     });
     
     const page = await browser.newPage();
+    // ضبط حجم الشاشة لضمان ظهور كل العناصر
+    await page.setViewport({ width: 1280, height: 800 });
 
     try {
-        await page.goto('https://justrunmy.app/login', { waitUntil: 'networkidle2' });
+        console.log('[+] Navigating to login page...');
+        await page.goto('https://justrunmy.app/login', { waitUntil: 'networkidle2', timeout: 60000 });
 
-        await page.type('input[type="email"]', process.env.MY_EMAIL);
-        await page.type('input[type="password"]', process.env.MY_PASSWORD);
+        // الانتظار حتى تظهر خانة الإيميل بوضوح
+        console.log('[+] Waiting for email input...');
+        await page.waitForSelector('input[name="email"], input[type="email"]', { visible: true, timeout: 30000 });
+
+        const emailInput = await page.$('input[name="email"], input[type="email"]');
+        const passwordInput = await page.$('input[name="password"], input[type="password"]');
+
+        await emailInput.type(process.env.MY_EMAIL);
+        await passwordInput.type(process.env.MY_PASSWORD);
+        
+        console.log('[+] Submitting login form...');
+        const submitButton = await page.$('button[type="submit"]');
         
         await Promise.all([
-            page.click('button[type="submit"]'),
-            page.waitForNavigation({ waitUntil: 'networkidle2' })
+            submitButton.click(),
+            page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 60000 }).catch(() => {})
         ]);
 
-        await page.goto('https://justrunmy.app/panel/application/63274/', { waitUntil: 'networkidle2' });
+        console.log('[+] Navigating to application panel...');
+        await page.goto('https://justrunmy.app/panel/application/63274/', { waitUntil: 'networkidle2', timeout: 60000 });
+
+        // الانتظار حتى تحميل أزرار الصفحة
+        await page.waitForSelector('button', { timeout: 30000 });
 
         const buttons = await page.$$('button');
         let clicked = false;
@@ -37,7 +54,7 @@ const puppeteer = require('puppeteer');
         }
 
         if (!clicked) {
-            console.log('[!] Button not found or already reset.');
+            console.log('[!] Reset timer button not found or already pressed.');
         }
 
     } catch (error) {
