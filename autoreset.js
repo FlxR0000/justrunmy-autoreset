@@ -6,8 +6,12 @@ puppeteer.use(StealthPlugin());
 (async () => {
     console.log('[+] Starting robust auto-reset process with full self-healing...');
     
+    // استخدام متصفح Chrome المثبت مسبقاً على سيرفر GitHub لتسريع التشغيل
+    const chromePath = process.env.PUPPETEER_EXEC_PATH || '/usr/bin/google-chrome';
+    
     const browser = await puppeteer.launch({ 
         headless: "new",
+        executablePath: chromePath,
         args: [
             '--no-sandbox', 
             '--disable-setuid-sandbox',
@@ -86,7 +90,6 @@ puppeteer.use(StealthPlugin());
             for (const btn of startRestartBtns) {
                 const text = await page.evaluate(el => (el.innerText || el.textContent || '').trim().toLowerCase(), btn);
                 if (text.includes('start') || text === 'restart') {
-                    // If container is stopped, bring it up first
                     const isStopped = await page.evaluate(() => document.body.innerText.toLowerCase().includes('application is stopped'));
                     if (isStopped && text.includes('start')) {
                         console.log('[+] Self-Healing: Application detected as stopped. Clicking Start...');
@@ -157,7 +160,6 @@ puppeteer.use(StealthPlugin());
 
     } catch (error) {
         console.error('[X] Execution failed:', error.message);
-        // Take diagnostic screenshot before exiting
         try {
             await page.screenshot({ path: 'page_preview.png', fullPage: true });
         } catch (e) {}
