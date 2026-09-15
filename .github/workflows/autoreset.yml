@@ -18,11 +18,10 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Fast Install Dependencies
+      - name: Install Dependencies Quickly
         run: |
-          npm install --no-audit --no-fund puppeteer-core puppeteer-extra puppeteer-extra-plugin-stealth
-        env:
-          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'true'
+          npm init -y
+          npm install puppeteer-core puppeteer-extra puppeteer-extra-plugin-stealth
 
       - name: Run Auto Reset Script
         env:
