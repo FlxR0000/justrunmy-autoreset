@@ -22,6 +22,8 @@ jobs:
         run: |
           npm init -y
           npm install puppeteer-core puppeteer-extra puppeteer-extra-plugin-stealth
+        env:
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'true'
 
       - name: Run Auto Reset Script
         env:
